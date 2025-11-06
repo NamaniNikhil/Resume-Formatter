@@ -1,0 +1,5 @@
+{
+  "name": "Smart Resume Formatter & ATS Optimizer",
+  "description": "An intelligent web application that converts raw resume text into perfectly formatted, ATS-optimized Word documents. It provides real-time optimization feedback and professional templates to help job seekers land their next role.",
+  "requestFramePermissions": []
+}
