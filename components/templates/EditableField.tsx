@@ -1,4 +1,16 @@
-
+/**
+ * INLINE EDITING COMPONENTS
+ * 
+ * These components enable users to edit the parsed resume data directly in the
+ * preview panel. Changes propagate immediately to the App state via callbacks,
+ * allowing users to refine AI-parsed content before exporting.
+ * 
+ * Key features:
+ * - Transparent until focused (seamless editing experience)
+ * - Immediate updates on every keystroke (no "save" button needed)
+ * - Support for both single-line and multi-line fields
+ * - List items can be individually deleted
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { TrashIcon } from '../icons/TrashIcon';
 
@@ -9,6 +21,16 @@ interface EditableFieldProps {
   isTextarea?: boolean;
 }
 
+/**
+ * EDITABLE FIELD COMPONENT
+ * 
+ * Renders an inline-editable text field that appears as regular text until clicked.
+ * On focus, shows a light blue background and border to indicate editability.
+ * Changes are immediately propagated to parent components via the onChange callback.
+ * 
+ * Used throughout the preview templates for all text content (name, contact, summary,
+ * experience details, education, etc.)
+ */
 export const EditableField: React.FC<EditableFieldProps> = ({ value, onChange, className = '', isTextarea = true }) => {
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
@@ -42,6 +64,15 @@ interface EditableListProps {
   className?: string;
 }
 
+/**
+ * EDITABLE LIST COMPONENT
+ * 
+ * Manages arrays of strings (e.g., experience bullet points, certifications).
+ * Each item is individually editable and can be deleted via a hover button.
+ * 
+ * This component is essential for the experience section where users may want
+ * to add, edit, or remove individual achievement bullets.
+ */
 export const EditableList: React.FC<EditableListProps> = ({ items, onChange, className }) => {
     
     const handleItemChange = (index: number, newValue: string) => {

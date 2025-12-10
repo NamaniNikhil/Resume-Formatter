@@ -60,16 +60,40 @@ const App: React.FC = () => {
     }
   }, [state.session]);
 
-
+  /**
+   * MAIN BUSINESS LOGIC FLOW: Parse Resume Text → ATS Analysis
+   * 
+   * This is the core function that orchestrates the transformation of raw resume text
+   * into structured, ATS-optimized data. It follows these steps:
+   * 
+   * 1. Validate input (rawText must not be empty)
+   * 2. Set status to PARSING and clear previous results
+   * 3. Call geminiService.parseResumeText() to extract structured data via Google GenAI
+   * 4. Set status to ANALYZING and store parsed data
+   * 5. If job description provided, call geminiService.analyzeAts() for keyword matching
+   * 6. Set status to SUCCESS and store ATS analysis (if applicable)
+   * 7. On error, set status to ERROR with user-friendly message
+   * 
+   * The parsed ResumeData flows to PreviewPanel for rendering and inline editing.
+   */
   const handleParse = useCallback(async () => {
+    // Step 1: Validate input
     if (!state.rawText.trim()) {
       setState(s => ({ ...s, error: 'Resume text cannot be empty.' }));
       return;
     }
+    
+    // Step 2: Set parsing state, clear previous results
     setState(s => ({ ...s, status: AppStatus.PARSING, error: null, currentResumeId: null, atsAnalysis: null }));
+    
     try {
+      // Step 3: Parse raw text into structured ResumeData using Google GenAI
       const parsedData = await parseResumeText(state.rawText);
+      
+      // Step 4: Store parsed data, transition to analyzing state
       setState(s => ({ ...s, status: AppStatus.ANALYZING, resumeData: parsedData }));
+      
+      // Step 5: If job description provided, analyze ATS score and keyword matching
       if (state.jobDescription.trim()) {
         const analysis = await analyzeAts(parsedData, state.jobDescription);
         setState(s => ({ ...s, status: AppStatus.SUCCESS, atsAnalysis: analysis }));
@@ -77,11 +101,19 @@ const App: React.FC = () => {
         setState(s => ({...s, status: AppStatus.SUCCESS}));
       }
     } catch (err: any) {
+      // Step 7: Handle errors gracefully
       console.error("Parse/Analyze Error:", err.message || err);
       setState(s => ({ ...s, status: AppStatus.ERROR, error: err.message || 'The AI failed to understand the resume structure. Please ensure clear headings are used and try again.' }));
     }
   }, [state.rawText, state.jobDescription]);
 
+  /**
+   * EXPORT FLOW: Generate DOCX Document
+   * 
+   * Converts the structured ResumeData into a professional Word document using
+   * the docx library. The selected template (Classic or Modern) determines the
+   * layout and styling. The generated Blob is downloaded via file-saver.
+   */
   const handleDownloadDocx = useCallback(async () => {
     if (!state.resumeData) return;
     setState(s => ({ ...s, status: AppStatus.GENERATING }));
@@ -95,10 +127,25 @@ const App: React.FC = () => {
     }
   }, [state.resumeData, state.selectedTemplate]);
 
+  /**
+   * EXPORT FLOW: Generate PDF Document
+   * 
+   * Uses browser's native print functionality to create a PDF. The print CSS
+   * media queries hide non-printable elements (input panel, buttons) and optimize
+   * the preview panel for print layout.
+   */
   const handleDownloadPdf = () => {
     window.print();
   };
   
+  /**
+   * PERSISTENCE FLOW: Save Resume to Supabase
+   * 
+   * Persists both the raw resume text and structured ResumeData to Supabase.
+   * Uses upsert logic: creates new record if no currentResumeId exists, otherwise
+   * updates the existing record. This allows users to save their work and continue
+   * editing later, including any inline edits made in the preview.
+   */
   const handleSaveResume = async () => {
     if (!state.resumeData || !state.rawText) return;
     setState(s => ({ ...s, status: AppStatus.SAVING }));
@@ -109,6 +156,7 @@ const App: React.FC = () => {
         resume_data: state.resumeData,
         name: state.resumeData.name,
       });
+      // Remove old version from list (for updates), then add saved version
       const updatedResumes = state.savedResumes.filter(r => r.id !== saved.id);
       setState(s => ({
         ...s,
@@ -122,6 +170,13 @@ const App: React.FC = () => {
     }
   };
 
+  /**
+   * PERSISTENCE FLOW: Load Saved Resume from Dashboard
+   * 
+   * Restores a previously saved resume from the database. Loads both the original
+   * raw text and the parsed/edited ResumeData, allowing users to continue from
+   * where they left off without re-parsing.
+   */
   const handleLoadResume = (resume: SavedResume) => {
     setState(s => ({
       ...s,

@@ -1,13 +1,36 @@
+/**
+ * DOCX SERVICE: Export Structured ResumeData to Word Documents
+ * 
+ * This service transforms the structured ResumeData into professional Word documents
+ * using the docx library. It provides two template layouts:
+ * 
+ * 1. CLASSIC: Traditional chronological layout with centered header
+ * 2. MODERN: Contemporary two-column hybrid layout with color accents
+ * 
+ * Both templates are ATS-friendly with proper heading hierarchy, standard fonts,
+ * and clear section delineation.
+ */
 import * as docx from 'docx';
 import { ResumeData, Template, Experience, Education, Skill } from '../types';
 
 const FONT_FAMILY = 'Calibri';
-const FONT_SIZE_BODY = 22; // 11pt
+const FONT_SIZE_BODY = 22; // 11pt (docx uses half-points)
 const FONT_SIZE_NAME = 40; // 20pt
 const FONT_SIZE_SUBHEADING = 24; // 12pt
 const SECTION_SPACING = { before: 200, after: 100 };
 
-// --- Classic Template Generation ---
+/**
+ * CLASSIC TEMPLATE GENERATOR
+ * 
+ * Creates a traditional chronological resume layout with:
+ * - Centered header (name + contact)
+ * - Bold section titles with bottom borders
+ * - Experience with right-aligned dates (using tab stops)
+ * - Bullet points for achievements
+ * - Clean, professional appearance
+ * 
+ * This template is ideal for traditional industries and conservative roles.
+ */
 const createClassicDoc = (data: ResumeData): docx.Document => {
   return new docx.Document({
     sections: [{
@@ -130,7 +153,19 @@ const createSkillItem = (skill: Skill) => new docx.Paragraph({
 });
 
 
-// --- Modern Template Generation ---
+/**
+ * MODERN TEMPLATE GENERATOR
+ * 
+ * Creates a contemporary two-column hybrid layout with:
+ * - Left column (33%): Contact, Skills, Education, Certifications
+ * - Right column (67%): Summary, Experience
+ * - Purple/indigo color accents
+ * - Arial font for modern appearance
+ * - Uppercase section titles
+ * 
+ * This template is ideal for creative, tech, and modern industries where
+ * visual differentiation is valued.
+ */
 const createModernDoc = (data: ResumeData): docx.Document => {
   const FONT_MODERN = 'Arial';
 
@@ -224,7 +259,17 @@ const createModernExperience = (exp: Experience) => [
   new docx.Paragraph(""), // Spacer
 ];
 
-// --- Main Export ---
+/**
+ * MAIN EXPORT FUNCTION: Generate DOCX Blob
+ * 
+ * Routes to the appropriate template generator based on user selection,
+ * then uses the docx library's Packer to convert the Document object
+ * into a downloadable Blob.
+ * 
+ * @param data - Structured resume data (from AI parsing + inline edits)
+ * @param template - Selected template (CLASSIC or MODERN)
+ * @returns Promise<Blob> - Word document ready for download
+ */
 export const generateDocx = async (data: ResumeData, template: Template): Promise<Blob> => {
   let doc: docx.Document;
 

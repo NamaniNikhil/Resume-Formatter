@@ -8,6 +8,20 @@ if (!process.env.API_KEY) {
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+/**
+ * STRUCTURED SCHEMA FOR AI PARSING
+ * 
+ * This schema enforces consistent structure in the AI's response, ensuring that
+ * the parsed resume data always conforms to our ResumeData interface. The schema
+ * uses Google GenAI's structured output feature to guarantee valid JSON.
+ * 
+ * Key design decisions:
+ * - Required fields ensure data completeness for ATS optimization
+ * - Skills are categorized (e.g., "Cloud & Platforms: AWS, Azure, GCP")
+ * - Experience descriptions are arrays (enables individual bullet editing)
+ * - Dates are flexible strings (accommodates various formats)
+ * - Optional fields (linkedin, portfolio, gpa, certifications) gracefully handled
+ */
 const resumeSchema = {
     type: Type.OBJECT,
     properties: {
@@ -67,6 +81,20 @@ const resumeSchema = {
     required: ["name", "contact", "summary", "experience", "education", "skills"]
 };
 
+/**
+ * CORE PARSING FUNCTION: Transform Raw Text → Structured ResumeData
+ * 
+ * Uses Google's Gemini 2.5 Flash model with structured output to extract resume
+ * information from unformatted text. The AI identifies sections (experience,
+ * education, skills, etc.) and returns data conforming to our schema.
+ * 
+ * This is the heart of the app's value proposition: turning messy, unstructured
+ * resume text into clean, ATS-optimized data that can be edited and exported.
+ * 
+ * @param rawText - Unformatted resume text pasted by the user
+ * @returns Promise<ResumeData> - Structured resume data ready for preview/export
+ * @throws Error if AI fails to parse or returns invalid JSON
+ */
 export const parseResumeText = async (rawText: string): Promise<ResumeData> => {
   const prompt = `You are an expert resume parsing AI. Extract the information from the following raw resume text and return it as a structured JSON object. 
 If skills are categorized (e.g., 'Cloud & Platforms: ...'), extract them into a 'skills' array where each object has a 'category' and a 'details' string.
@@ -90,6 +118,13 @@ ${rawText}
   return JSON.parse(jsonText) as ResumeData;
 };
 
+/**
+ * STRUCTURED SCHEMA FOR ATS ANALYSIS
+ * 
+ * Defines the structure for ATS (Applicant Tracking System) scoring and analysis.
+ * The AI evaluates the resume against best practices and (optionally) a specific
+ * job description to provide actionable feedback.
+ */
 const atsSchema = {
     type: Type.OBJECT,
     properties: {
@@ -106,6 +141,27 @@ const atsSchema = {
     required: ["score", "suggestions"]
 };
 
+/**
+ * ATS ANALYSIS FUNCTION: Evaluate Resume Quality & Keyword Matching
+ * 
+ * Analyzes the structured resume data against ATS best practices and (if provided)
+ * a specific job description. Returns a score (0-100) based on weighted criteria:
+ * 
+ * - Section Completeness (25%): All major sections present
+ * - Keyword Relevance (25%): Action verbs, technical skills
+ * - Appropriate Length (15%): Ideally 400-800 words
+ * - Contact Info (15%): Email, phone, location all present
+ * - Format Cleanliness (20%): Proper structure and organization
+ * 
+ * When a job description is provided, the AI performs keyword matching to identify:
+ * - Matched keywords: Present in both resume and JD (good alignment)
+ * - Missing keywords: In JD but not in resume (opportunities for improvement)
+ * 
+ * @param resumeData - Structured resume data from parseResumeText()
+ * @param jobDescription - Optional job description for keyword analysis
+ * @returns Promise<AtsAnalysis> - Score, suggestions, and keyword analysis
+ * @throws Error if AI fails to analyze or returns invalid JSON
+ */
 export const analyzeAts = async (resumeData: ResumeData, jobDescription: string): Promise<AtsAnalysis> => {
     const resumeJsonString = JSON.stringify(resumeData, null, 2);
 
