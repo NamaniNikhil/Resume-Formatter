@@ -1,4 +1,18 @@
-
+/**
+ * CLASSIC PREVIEW TEMPLATE
+ * 
+ * Renders the resume in a traditional chronological layout with inline editing.
+ * All fields are editable via EditableField/EditableList components. Changes flow
+ * through helper functions (handleUpdate, handleNestedUpdate, handleArrayUpdate)
+ * that construct new immutable state objects and propagate them to App via onUpdate.
+ * 
+ * Update Flow:
+ * User edits field → EditableField.onChange
+ *   → handleUpdate/handleNestedUpdate/handleArrayUpdate
+ *   → onUpdate({ ...data, [field]: newValue })
+ *   → App.setResumeData(updatedData)
+ *   → State updates, component re-renders with new data
+ */
 import React from 'react';
 import { ResumeData, Experience, Education, Skill } from '../../types';
 import { EditableField, EditableList } from './EditableField';
@@ -10,14 +24,17 @@ interface PreviewProps {
 
 export const ClassicPreview: React.FC<PreviewProps> = ({ data, onUpdate }) => {
   
+  // Handler for top-level fields (name, summary, certifications)
   const handleUpdate = (field: keyof ResumeData, value: any) => {
     onUpdate({ ...data, [field]: value });
   };
   
+  // Handler for nested object fields (contact.email, contact.phone, etc.)
   const handleNestedUpdate = (section: 'contact', key: keyof ResumeData['contact'], value: string) => {
     onUpdate({ ...data, [section]: { ...data[section], [key]: value } });
   };
 
+  // Handler for array items (experience[0].jobTitle, education[1].degree, etc.)
   const handleArrayUpdate = (
     section: 'experience' | 'education' | 'skills',
     index: number,
@@ -78,7 +95,7 @@ export const ClassicPreview: React.FC<PreviewProps> = ({ data, onUpdate }) => {
             />
           </div>
         ))}
-      </section>
+      </Section>
 
       <Section title="Education">
         {data.education.map((edu, index) => (
@@ -90,7 +107,7 @@ export const ClassicPreview: React.FC<PreviewProps> = ({ data, onUpdate }) => {
              <EditableField value={`${edu.degree}${edu.gpa ? `, GPA: ${edu.gpa}` : ''}`} onChange={v => handleArrayUpdate('education', index, 'degree', v)} className="italic" isTextarea={false} />
           </div>
         ))}
-      </section>
+      </Section>
 
       {data.certifications && data.certifications.length > 0 && (
          <Section title="Certifications">
